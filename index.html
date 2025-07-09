@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cmsShowWeb Gateway</title>
+    <!-- UI5 Bootstrap -->
+    <script
+      id="sap-ui-bootstrap"
+      src="https://sdk.openui5.org/resources/sap-ui-core.js"
+      data-sap-ui-theme="sap_fiori_3_dark"
+      data-sap-ui-libs="sap.m, sap.ui.layout"
+      data-sap-ui-xx-bindingSyntax="complex"
+    ></script>
+    <!-- Custom CSS for fading header -->
+    <style>
+      body { background-color: black; margin: 0; color: white; }
+      .fading-header {
+        font-size: 2.5rem;
+        text-align: center;
+        padding: 50px;
+        background-image: url('tracker.jpg');
+        background-size: cover;
+        background-position: center;
+        position: relative;
+        height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+      }
+      .fading-background {
+        position: absolute;
+        inset: 0;
+        animation: fadeInBackground 10s forwards;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 1;
+      }
+      @keyframes fadeInBackground { to { background-color: rgba(0, 0, 0, 0.5); } }
+      .fading-header h1, .fading-header .description { position: relative; z-index: 2; }
+      .fading-header h1 { font-size: 4rem; }
+      .description { margin-top: 20px; font-size: 1.8rem; }
+      h2.cmsSubtitle { font-size: 2rem; font-weight: 600; margin: 1rem 0; color: #fff; }
+      .configLabel { font-size: 1.2rem; margin-top: 1rem; color: #ccc; }
+      .statusText { font-size: 1rem; margin-top: 1rem; color: #ccc; }
+      footer { background-color: #333; color: #fff; text-align: center; padding: 20px; margin-top: 2rem; }
+      .sapUiBody { padding: 0 !important; }
+    </style>
+  </head>
+  <body>
+    <div id="content"></div>
+    <script>
+      sap.ui.getCore().attachInit(function () {
+        // Header as HTML
+        var oHeader = new sap.ui.core.HTML({
+          content: `
+            <div class="fading-header">
+              <div class="fading-background"></div>
+              <h1>cmsShowWeb Gateway @ CERN</h1>
+              <p class="description">Hi User, please choose your action below.</p>
+            </div>`
+        });
+
+        // Left column: file input & actions
+        var oLeftVBox = new sap.m.VBox({
+          items: [
+            new sap.ui.core.HTML({content: '<h2 class="cmsSubtitle">Open Event Display</h2>'}),
+            new sap.m.Input({
+              id: "fileInput",
+              placeholder: "Enter file name(s), separated by spaces",
+              width: "100%",
+              liveChange: function(e) {
+                document.forms[0].File.value = e.getParameter("value");
+              }
+            }),
+            new sap.m.List({
+              items: [
+                { label: "Load File EOS", action: "Load File EOS", desc: "Open CERN EOS LFN (/store/... or /eos/...)" },
+                { label: "Load RelValMuMuMiniaod.root", action: "Load RelValMuMuMiniaod.root" },
+                { label: "Load RelValMuMureco.root", action: "Load RelValMuMureco.root" },
+                { label: "Load RelValRecHitReco.root", action: "Load RelValRecHitReco.root" },
+                { label: "Load RelValTTBarReco.root", action: "Load RelValTTBarReco.root" },
+                { label: "Load RelValZTTMiniaod.root", action: "Load RelValZTTMiniaod.root" },
+                { label: "Load RelValZEEMiniaod.root", action: "Load RelValZEEMiniaod.root" }
+              ].map(function(item) {
+                return new sap.m.StandardListItem({
+                  title: item.label,
+                  description: item.desc || "",
+                  type: "Active",
+                  press: function() {
+                    var oForm = document.forms[0];
+                    oForm.Action.value = item.action;
+                    oForm.submit();
+                  }
+                });
+              })
+            })
+          ]
+        }).setLayoutData(new sap.ui.layout.GridData({span: "L6 M6 S12"}));
+
+        // Right column: configuration & status
+        var oRightVBox = new sap.m.VBox({
+          items: [
+            new sap.ui.core.HTML({content: '<h2 class="cmsSubtitle">Configuration (optional)</h2>'}),
+            new sap.ui.core.HTML({content: '<div>Auto-loaded relative to data file. For custom, enter name of fireworks config in <a href="/config/user" style="color:#1ea7fd;">/config/user</a> or URL</div>'}),
+            new sap.m.Input({
+              placeholder: "FW configuration file or URL",
+              width: "100%",
+              change: function(e) { document.forms[0].FWconfig.value = e.getParameter("value"); }
+            }),
+            new sap.ui.core.HTML({content:'<br></br>'}),
+            new sap.ui.core.HTML({content: '<h2 class="cmsSubtitle">Geometry (optional)</h2>'}),
+            new sap.m.Input({
+              placeholder: "EOS path to geometry file",
+              width: "100%",
+              change: function(e) { document.forms[0].FWgeo.value = e.getParameter("value"); }
+            }),
+            new sap.ui.core.HTML({content: '<div class="statusText">Your recent logs are available here: <a href="/logs/user" style="color:#1ea7fd;">/logs/user</a></div>'}),
+
+            new sap.ui.core.HTML({content:'<br></br>'}),
+            new sap.ui.core.HTML({content: '<h2 class="cmsSubtitle">Status</h2>'}),
+
+            new sap.ui.core.HTML({content: '<div class="statusText">Currently serving 0 (total 130 since service start).</div>'})
+          ]
+        }).setLayoutData(new sap.ui.layout.GridData({span: "L6 M6 S12"}));
+
+        // Build Grid
+        var oGrid = new sap.ui.layout.Grid({
+          defaultSpan: "L12 M12 S12",
+          hSpacing: 2,
+          content: [oLeftVBox, oRightVBox]
+        });
+
+        // Footer
+        var oFooter = new sap.ui.core.HTML({
+          content: `
+            <footer>
+              Mail to <a href="mailto:cmstalk+visualization@cern.ch" style="color:#1ea7fd;">cmstalk+visualization@cern.ch</a>
+              <br>CMS Talk archive <a href="https://cms-talk.web.cern.ch/c/offcomp/visualization/165" style="color:#1ea7fd;">Visualization Discussion</a>
+            </footer>`
+        });
+
+        // Assemble Page
+        var oPage = new sap.m.Page({ showHeader: false, content: [oHeader, oGrid, oFooter] });
+
+        // Hidden form for posting
+        var oForm = document.createElement('form');
+        oForm.method = 'post';
+        oForm.action = '/cmsShowWeb/revetor.pl';
+        oForm.enctype = 'multipart/form-data';
+        oForm.style.display = 'none';
+        ['Action', 'File', 'FWconfig', 'FWgeo'].forEach(function(name) {
+          var inp = document.createElement('input'); inp.type = 'hidden'; inp.name = name; oForm.appendChild(inp);
+        });
+        document.body.appendChild(oForm);
+
+        // Render Shell
+        new sap.m.Shell({ app: oPage }).placeAt("content");
+      });
+    </script>
+  </body>
+</html>
+
