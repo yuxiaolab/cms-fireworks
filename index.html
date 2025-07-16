@@ -61,6 +61,18 @@
             </div>`
         });
 
+        const oHistoryModel = new sap.ui.model.json.JSONModel({ history: [] });
+        function getHistory() {
+          return JSON.parse(localStorage.getItem("inputHistory") || "[]");
+        }
+
+        function addToHistory(value) {
+          let history = getHistory();
+          if (!history.includes(value)) {
+            history.push(value);
+            localStorage.setItem("inputHistory", JSON.stringify(history));
+          }
+        }
         // Left column: file input & actions
         var oLeftVBox = new sap.m.VBox({
           items: [
@@ -71,6 +83,24 @@
               width: "100%",
               liveChange: function(e) {
                 document.forms[0].File.value = e.getParameter("value");
+              },
+              showSuggestion: true,
+              suggestionItems: {
+                path: "/history",
+                template: new sap.ui.core.Item({ text: "{text}" })
+              },
+              suggest: function (oEvent) {
+                const sValue = oEvent.getParameter("suggestValue").toLowerCase();
+                const aFiltered = getHistory()
+                  .filter(h => h.toLowerCase().includes(sValue))
+                  .map(text => ({ text }));
+                oHistoryModel.setData({ history: aFiltered });
+              },
+              change: function (oEvent) {
+                const sValue = oEvent.getParameter("value");
+                if (sValue) {
+                  addToHistory(sValue);
+                }
               }
             }),
             new sap.m.List({
@@ -92,7 +122,8 @@
                     let path = "https://vocms0101.cern.ch/cmsShowWeb/revetor-fwdev.pl?load_file=";
 
                     if (this.getTitle() == "Load File EOS") {
-                      path += document.forms[0].File.value;
+                      let inputEntry = sap.ui.getCore().byId("fileInput");
+                      path += inputEntry.getValue();
                     }
                     else
                     {
@@ -109,6 +140,10 @@
             })
           ]
         }).setLayoutData(new sap.ui.layout.GridData({span: "L6 M6 S12"}));
+
+
+        let fin = sap.ui.getCore().byId("fileInput");
+        fin.setModel(oHistoryModel);
 
         // Right column: configuration & status
         var oRightVBox = new sap.m.VBox({
@@ -153,7 +188,9 @@
         });
 
         // Assemble Page
-        var oPage = new sap.m.Page({ showHeader: false, content: [oHeader, oGrid, oFooter] });
+        var oPage = new sap.m.Page({ showHeader: false,
+                                     content: [oHeader, oGrid, oFooter]
+                                    });
 
         // Hidden form for posting
         var oForm = document.createElement('form');
