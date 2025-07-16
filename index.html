@@ -75,22 +75,34 @@
             }),
             new sap.m.List({
               items: [
-                { label: "Load File EOS", action: "Load File EOS", desc: "Open CERN EOS LFN (/store/... or /eos/...)" },
-                { label: "Load RelValMuMuMiniaod.root", action: "Load RelValMuMuMiniaod.root" },
-                { label: "Load RelValMuMureco.root", action: "Load RelValMuMureco.root" },
-                { label: "Load RelValRecHitReco.root", action: "Load RelValRecHitReco.root" },
-                { label: "Load RelValTTBarReco.root", action: "Load RelValTTBarReco.root" },
-                { label: "Load RelValZTTMiniaod.root", action: "Load RelValZTTMiniaod.root" },
-                { label: "Load RelValZEEMiniaod.root", action: "Load RelValZEEMiniaod.root" }
+                { label: "Load File EOS", action: "EOS", desc: "Open CERN EOS LFN (/store/... or /eos/...)" },
+                { label: "Load RelValMuMuMiniaod.root", action: "RelValMuMuMiniaod.root" },
+                { label: "Load RelValMuMureco.root", action: "RelValMuMureco.root"},
+                { label: "Load RelValRecHitReco.root", action: "RelValRecHitReco.root" },
+                { label: "Load RelValTTBarReco.root", action: "RelValTTBarReco.root" },
+                { label: "Load RelValZTTMiniaod.root", action: "RelValZTTMiniaod.root" },
+                { label: "Load RelValZEEMiniaod.root", action: "RelValZEEMiniaod.root" }
               ].map(function(item) {
                 return new sap.m.StandardListItem({
                   title: item.label,
                   description: item.desc || "",
+                  info: item.action,
                   type: "Active",
                   press: function() {
-                    var oForm = document.forms[0];
-                    oForm.Action.value = item.action;
-                    oForm.submit();
+                    let path = "https://vocms0101.cern.ch/cmsShowWeb/revetor-fwdev.pl?load_file=";
+
+                    if (this.getTitle() == "Load File EOS") {
+                      path += document.forms[0].File.value;
+                    }
+                    else
+                    {
+                      path += "/data2/CMSSW_12_5_relval-samples/";
+                      path += this.getProperty("info");
+                    }
+                     sap.m.URLHelper.redirect(path, false)
+                  //  var oForm = document.forms[0];
+                 //   oForm.Action.value = item.action;
+                  //  oForm.submit();
                   }
                 });
               })
